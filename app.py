@@ -1,60 +1,102 @@
 import streamlit as st
-import pandas as pd
-import io
-
-st.set_page_config(page_title="Analisador de Excel para CSV", layout="wide")
-st.title("📊 Ferramenta de Análise de Base de Dados")
-st.write("Faça o upload do seu arquivo Excel (.xlsx) para realizar a análise e baixar o resultado em CSV.")
-
-# 1. Widget de Upload de Arquivo
-uploaded_file = st.file_uploader("Selecione o arquivo Excel", type=['xlsx'])
-
-if uploaded_file is not None:
-    # Lendo o arquivo para um DataFrame do Pandas
-    try:
-        # Usar st.cache_data garante que o Streamlit não recarregue o arquivo 
-        # e não refaça a análise desnecessariamente se o usuário interagir com a página.
-        @st.cache_data
-        def load_data(file):
-            return pd.read_excel(file)
-
-        df = load_data(uploaded_file)
-        st.success(f"Arquivo carregado com sucesso! Total de {len(df)} linhas.")
-        
-        # 2. Análise Simples em Pandas
-        
-        # EXEMPLO DE ANÁLISE: Contagem de valores únicos na primeira coluna
-        coluna_para_analise = st.selectbox(
-            "Escolha a coluna para análise:", 
-            options=df.columns
-        )
-        
-        # Certifica-se de que a coluna foi selecionada e não está vazia
-        if coluna_para_analise and not df.empty:
-            st.subheader(f"Contagem de Ocorrências por '{coluna_para_analise}'")
-            
-            # Executa o value_counts
-            resultado_analise = df[coluna_para_analise].value_counts().reset_index()
-            resultado_analise.columns = [coluna_para_analise, 'Contagem']
-            
-            st.dataframe(resultado_analise)
-
-            # 3. Preparando o Download do CSV
-            
-            # Função para converter o DataFrame para string CSV
             @st.cache_data
-            def convert_df_to_csv(df_to_convert):
-                return df_to_convert.to_csv(index=False).encode('utf-8')
+from datetime import datetime
+from processamento import processar_planilha, gerar_csv_download
+from ui import aplicar_estilo, sidebar_ajuda
 
-            csv_data = convert_df_to_csv(resultado_analise)
-            
-            st.download_button(
-                label="📥 Baixar Resultado da Análise em CSV",
-                data=csv_data,
-                file_name=f'analise_{coluna_para_analise}.csv',
-                mime='text/csv',
+
+
+st.set_page_config(
+    page_title="Extractor de Contatos - 7Edu",
+    page_icon="📞",
+    layout="wide"
+)
+
+aplicar_estilo()
+sidebar_ajuda()
+
+st.markdown("""
+    <div style="text-align: center;">
+        <h1>Geração de Lista de Contatos 📇</h1>
+        <p style="color: gray; font-size:16px;">
+            Criação de lista de contatos a partir da extração de dados do 7Edu.
+        </p>
+    </div>
+""", unsafe_allow_html=True)
+st.divider()
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("<div style='text-align: center; font-weight: 600;'>📤 Selecione o arquivo Excel</div>", unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("", type=["xlsx", "xls"])
+
+with col2:
+    st.markdown("<div style='text-align: center; font-weight: 600;'>🏫 Código da unidade escolar</div>", unsafe_allow_html=True)
+    codigo_unidade = st.text_input("", "")
+
+st.divider()
+
+st.markdown("### 🔄 Log de processamento")
+log_area = st.container()
+with log_area:
+    log_box = st.empty()
+
+if uploaded_file and codigo_unidade.strip():
+    if st.button("🚀 Processar arquivo", use_container_width=True):
+        try:
+            with st.spinner("Processando contatos..."):
+                contatos_df = processar_planilha(uploaded_file, codigo_unidade, log_area)
+
+            buffer, nome_arquivo = gerar_csv_download(contatos_df, codigo_unidade)
+
+            st.markdown(
+                """
+                <style>
+                div.stDownloadButton > button {
+                    background-color: #ff5722;
+                    color: white;
+                    font-size: 16px;
+                    font-weight: 600;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 12px;
+                    transition: transform 0.2s ease, filter 0.2s ease;
+                }
+                div.stDownloadButton > button:hover {
+                    transform: scale(1.05);
+                    filter: brightness(1.1);
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
             )
-        
-    except Exception as e:
-        st.error(f"Ocorreu um erro ao processar o arquivo: {e}")
-        st.warning("Verifique se o arquivo está no formato .xlsx e se as colunas estão corretas.")
+
+            st.download_button(
+                label="📥 Baixar CSV Gerado",
+                data=buffer,
+                file_name=nome_arquivo,
+                mime="text/csv",
+                use_container_width=True
+            )
+
+            st.dataframe(contatos_df, use_container_width=True)
+
+        except Exception as e:
+            st.error(f"❌ Ocorreu um erro: {e}")
+
+elif uploaded_file and not codigo_unidade.strip():
+    st.info("⬆️ Digite o código da unidade para habilitar o botão de processar.")
+
+else:
+    st.info("⬆️ Envie um arquivo e informe o código da unidade para começar.")
+
+st.markdown("---")
+st.markdown(
+    f"""
+    <div style='text-align: center; color: gray; font-size: 14px; margin-top: 20px;'>
+        Desenvolvido por <b>Ricardo Alves de Souza</b> · {datetime.now().year}<br>
+        <span style='font-size: 13px;'>Extractor de Contatos - Versão 1.0</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
