@@ -1,5 +1,4 @@
 import streamlit as st
-            @st.cache_data
 from datetime import datetime
 from processamento import processar_planilha, gerar_csv_download
 from ui import aplicar_estilo, sidebar_ajuda
