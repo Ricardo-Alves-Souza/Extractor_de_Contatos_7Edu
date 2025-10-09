@@ -1,96 +1,97 @@
 def safe_str(value):
     """
-    Converte um valor em uma string segura, lidando com None e removendo espaços.
-
-    Garante que, ao trabalhar com dados de fontes externas, se evitem erros de tipo (TypeError) 
-    causados por valores nulos (None) e que a string resultante seja limpa.
+    Garante que o valor seja retornado como uma string limpa e segura.
 
     Args:
-        value (any): O valor de entrada a ser convertido (ex: str, int, float, None).
+        value (any): O valor a ser convertido.
 
     Returns:
-        str: Uma string limpa (sem espaços no início/fim). Retorna "" se o valor de entrada for None.
+        str: String vazia se None, ou string limpa (strip) do valor.
     """
     if value is None:
         return ""
-    
     return str(value).strip()
 
 
 def limpar_telefone_simples(telefone):
     """
-    Remove todos os caracteres que não são dígitos de uma string de telefone.
+    Remove todos os caracteres não numéricos de uma string de telefone.
 
     Args:
-        telefone (str): A string de telefone original (ex: "(11) 9999-0000 ramal 123").
+        telefone (str/any): O número de telefone bruto.
 
     Returns:
-        str: O número de telefone limpo, contendo apenas dígitos (ex: "1199990000123").
+        str: String contendo apenas dígitos. Retorna '' se a entrada for falsy.
     """
-    return "".join(c for c in telefone if c.isdigit())
+    # Garante que a entrada seja string antes de iterar
+    return "".join(c for c in str(telefone) if c.isdigit()) if telefone else ""
 
 
 def adicionar_ddi_brasil(numero_limpo):
     """
-    Garante que o número de telefone limpo comece com o DDI do Brasil ('55').
-
-    Trata o caso de strings vazias para evitar a criação de prefixos inválidos.
+    Adiciona o DDI brasileiro ('55') ao número, se ele ainda não estiver presente.
 
     Args:
-        numero_limpo (str): O número de telefone contendo apenas dígitos (saída de limpar_telefone_simples).
+        numero_limpo (str): Número de telefone limpo (somente dígitos).
 
     Returns:
-        str: O número de telefone com o prefixo '55' garantido. Retorna uma string vazia se o 
-             número de entrada estava vazio.
+        str: Número de telefone padronizado com DDI.
     """
     if not numero_limpo:
         return ''
     
+    # Verifica se já começa com '55'
     if not numero_limpo.startswith('55'):
         return '55' + numero_limpo
-    
+        
     return numero_limpo
 
 
 def _determinar_tipos(tipo_inicial, nome_pessoa, resp_legal, resp_financeiro):
     """
-    Determina e retorna a lista de tipos de contato (P, M, RL, RF) para uma pessoa.
-
-    Verifica se a pessoa também é Responsável Legal (RL) e/ou Responsável Financeiro (RF).
+    Função auxiliar para identificar múltiplos papéis (RL, RF) de um contato.
 
     Args:
-        tipo_inicial (str): O tipo de contato base ("P" para Pai, "M" para Mãe).
-        nome_pessoa (str): O nome da pessoa sendo avaliada.
+        tipo_inicial (str): O papel principal ('P' ou 'M').
+        nome_pessoa (str): O nome da pessoa sendo analisada.
         resp_legal (str): Nome do Responsável Legal.
         resp_financeiro (str): Nome do Responsável Financeiro.
 
     Returns:
-        list: Uma lista de strings com os tipos de responsabilidade (ex: ["P", "RL", "RF"]).
+        list: Lista de tipos de responsabilidade que a pessoa possui.
     """
     tipos = [tipo_inicial]
+    
+    # Adiciona 'RL' se o nome corresponder ao Responsável Legal
     if nome_pessoa and nome_pessoa == resp_legal:
         tipos.append("RL")
+        
+    # Adiciona 'RF' se o nome corresponder ao Responsável Financeiro
     if nome_pessoa and nome_pessoa == resp_financeiro:
         tipos.append("RF")
+        
     return tipos
+
 
 def _formatar_contato(cod_turma, tipos, nome_pessoa, codigo_unidade, cod_aluno, nome_aluno, fone):
     """
-    Monta a tupla final de contato no formato [string_identificacao, telefone].
-
-    Cria a string de identificação detalhada que inclui turma, tipos de contato, unidade e dados do aluno.
+    Função auxiliar para construir a chave de identificação completa do contato.
 
     Args:
         cod_turma (str): Código da turma.
-        tipos (list): Lista de tipos de contato (ex: ["M", "RL"]).
-        nome_pessoa (str): Nome da pessoa de contato.
+        tipos (list): Lista de tipos de responsabilidade.
+        nome_pessoa (str): Nome do titular do contato.
         codigo_unidade (str): Código da unidade escolar.
-        cod_aluno (str): Código do aluno.
+        cod_aluno (str): Identificador do estudante.
         nome_aluno (str): Nome do aluno.
-        fone (str): Número de telefone limpo da pessoa.
+        fone (str): Telefone padronizado.
 
     Returns:
-        list: Uma lista contendo a string de identificação formatada e o telefone.
+        list: [identificacao_completa, telefone]
     """
-    identificacao = f"{cod_turma} - ({' - '.join(tipos)}) {nome_pessoa} - {codigo_unidade}|{cod_aluno} - (A) {nome_aluno}"
+    # Cria a string de identificação formatada
+    identificacao = (
+        f"{cod_turma} - ({' - '.join(tipos)}) {nome_pessoa} - "
+        f"{codigo_unidade}|{cod_aluno} - (A) {nome_aluno}"
+    )
     return [identificacao, fone]
