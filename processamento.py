@@ -23,9 +23,17 @@ def processar_planilha(uploaded_file, codigo_unidade):
     df = pd.read_excel(uploaded_file)
     
     colunas_obrigatorias = [
-        'Pai', 'Mãe', 'Responsável Legal', 'Responsável Financeiro',
-        'Turma', 'Nome Completo', 'Identificador Estudante',
-        'Telefone da Mãe', 'Telefone do Pai', 'Série', 'Telefone do Responsável Legal'
+        'Nome Completo', 
+        'Identificador Estudante',
+        'Turma',
+        'Pai', 
+        'Telefone do Pai', 
+        'Mãe', 
+        'Telefone da Mãe', 
+        'Responsável Legal', 
+        'Telefone do Responsável Legal',
+        'Responsável Financeiro',
+        'Telefone do Responsável Financeiro' 
     ]
 
     faltantes = [c for c in colunas_obrigatorias if c not in df.columns]
@@ -55,50 +63,42 @@ def processar_planilha(uploaded_file, codigo_unidade):
             continue
 
         # Limpeza inicial dos telefones
-        raw_mae = limpar_telefone_simples(row.get('Telefone da Mãe'))
-        raw_pai = limpar_telefone_simples(row.get('Telefone do Pai'))
-        raw_resp = limpar_telefone_simples(row.get('Telefone do Responsável Legal'))
+        phone_mae = limpar_telefone_simples(row.get('Telefone da Mãe'))
+        phone_pai = limpar_telefone_simples(row.get('Telefone do Pai'))
+        phone_resp_legal = limpar_telefone_simples(row.get('Telefone do Responsável Legal'))
+        phone_resp_financeiro = limpar_telefone_simples(row.get('Telefone do Responsável Financeiro'))
 
         validados = []  # Lista de contatos válidos a serem inseridos
         invalidos = []  # Lista para rastrear telefones inválidos (opcional)
 
         # Processamento: PAI
-        if raw_pai:
-            if len(raw_pai) < 8:
-                invalidos.append(('Pai', raw_pai))
+        if phone_pai:
+            if len(phone_pai) < 8:
+                invalidos.append(('Pai', phone_pai))
             else:
-                validados.append(('P', adicionar_ddi_brasil(raw_pai), safe_str(row.get('Pai'))))
+                validados.append(('P', adicionar_ddi_brasil(phone_pai), safe_str(row.get('Pai'))))
 
         # Processamento: MÃE
-        if raw_mae:
-            if len(raw_mae) < 8:
-                invalidos.append(('Mãe', raw_mae))
+        if phone_mae:
+            if len(phone_mae) < 8:
+                invalidos.append(('Mãe', phone_mae))
             else:
-                validados.append(('M', adicionar_ddi_brasil(raw_mae), safe_str(row.get('Mãe'))))
+                validados.append(('M', adicionar_ddi_brasil(phone_mae), safe_str(row.get('Mãe'))))
 
         # Processamento: RESPONSÁVEL LEGAL
         resp_legal_nome = safe_str(row.get('Responsável Legal'))
-        if raw_resp and len(raw_resp) >= 8:
+        if phone_resp_legal and len(phone_resp_legal) >= 8:
             # Verifica se o RL não é duplicado como Pai ou Mãe
             if resp_legal_nome not in [safe_str(row.get('Pai')), safe_str(row.get('Mãe'))]:
-                validados.append(('RL', adicionar_ddi_brasil(raw_resp), resp_legal_nome))
+                validados.append(('RL', adicionar_ddi_brasil(phone_resp_legal), resp_legal_nome))
 
         # Processamento: RESPONSÁVEL FINANCEIRO
         resp_financeiro_nome = safe_str(row.get('Responsável Financeiro'))
-        if resp_financeiro_nome:
-            # Verifica se o RF não é duplicado como Pai, Mãe ou RL
-            if resp_financeiro_nome not in [
-                safe_str(row.get('Pai')),
-                safe_str(row.get('Mãe')),
-                safe_str(row.get('Responsável Legal'))
-            ]:
-                # Busca o telefone do RF se a coluna existir
-                fone_fin = (
-                    limpar_telefone_simples(row.get('Telefone do Responsável Financeiro'))
-                    if 'Telefone do Responsável Financeiro' in df.columns else ''
-                )
-                if fone_fin and len(fone_fin) >= 8:
-                    validados.append(('RF', adicionar_ddi_brasil(fone_fin), resp_financeiro_nome))
+        if phone_resp_financeiro and len(phone_resp_financeiro) >= 8:
+            # Verifica se o RL não é duplicado como Pai ou Mãe
+            if resp_financeiro_nome not in [safe_str(row.get('Pai')), safe_str(row.get('Mãe'))]:
+                validados.append(('RF', adicionar_ddi_brasil(phone_resp_financeiro), resp_financeiro_nome))
+        
 
         # 4. Tratamento de Casos sem Contato Válido
         if not validados:
@@ -129,12 +129,12 @@ def processar_planilha(uploaded_file, codigo_unidade):
             if tipo in contagem_tipos:
                 contagem_tipos[tipo] += 1
 
-        # 6. Atualização dos Contadores de Sucesso/Erro
-        if contatos_inseridos > 0:
-            sucessos += 1
-        else:
-            erros += 1
-            usuarios_erro.append({'usuario': nome_aluno, 'motivo': 'Nenhum contato válido encontrado (duplicidade/filtro)'})
+            # 6. Atualização dos Contadores de Sucesso/Erro
+            if contatos_inseridos > 0:
+                sucessos += 1
+            else:
+                erros += 1
+                usuarios_erro.append({'usuario': nome_aluno, 'motivo': 'Nenhum contato válido encontrado (duplicidade/filtro)'})
 
     # 7. Retorno final (garante desduplicação no DF final)
     df_contatos = pd.DataFrame(contatos, columns=['name', 'phone'])

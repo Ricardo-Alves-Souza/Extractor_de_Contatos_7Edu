@@ -24,7 +24,7 @@ with col2:
     opcoes_unidades = [
         "401 - Americanópolis", 
         "501 - Araçariguama",
-        "601 - Brooklin",'' 
+        "601 - Brooklin", 
         "901 - Campo Grande", 
         "1001 - Cidade Ademar",
         "1401 - Cotia", 

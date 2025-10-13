@@ -88,7 +88,8 @@ def sidebar_ajuda():
         st.markdown("""
         1️⃣ Faça upload do arquivo Excel (.xlsx)  
         2️⃣ Selecione a unidade escolar  
-        3️⃣ Clique em **Processar arquivo** 4️⃣ Baixe o CSV gerado ✅
+        3️⃣ Clique em **Processar arquivo**          
+        4️⃣ Baixe o CSV gerado
         """)
         
         # Alerta e Colunas Obrigatórias
