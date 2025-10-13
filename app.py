@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime
 from processamento import processar_planilha, gerar_csv_download
 from ui import aplicar_estilo, sidebar_ajuda, cabecalho_principal, titulo_secao
+import openpyxl
 
 st.set_page_config(
     page_title="Extractor de Contatos - 7Edu",

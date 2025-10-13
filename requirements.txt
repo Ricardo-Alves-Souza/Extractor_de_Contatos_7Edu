@@ -1,0 +1,12 @@
+# Aplicação Streamlit - Extractor de Contatos 7Edu
+streamlit==1.39.0
+pandas==2.2.3
+openpyxl==3.1.5
+
+# Dependências padrão do ecossistema
+python-dateutil>=2.8.2
+pytz>=2023.3
+numpy>=1.26.4
+
+# (Opcional) para melhorar compatibilidade de leitura de Excel antigos (.xls)
+xlrd>=2.0.1
